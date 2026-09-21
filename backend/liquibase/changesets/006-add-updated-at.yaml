@@ -1,0 +1,45 @@
+databaseChangeLog:
+   - changeSet:
+      id: 006-add-updated-at
+      author: metaconnect
+      changes:
+
+        - addColumn:
+            tableName: databases
+            columns:
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addColumn:
+            tableName: schemas
+            columns:
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addColumn:
+            tableName: tables
+            columns:
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addColumn:
+            tableName: columns
+            columns:
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false

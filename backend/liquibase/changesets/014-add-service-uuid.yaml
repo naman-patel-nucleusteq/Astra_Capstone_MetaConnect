@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-add-service-uuid
+      author: metaconnect
+      changes:
+        - addColumn:
+            tableName: services
+            columns:
+              - column:
+                  name: uuid
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    nullable: false
+                    unique: true

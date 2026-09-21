@@ -1,0 +1,81 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-create-pipelines
+      author: metaconnect
+      changes:
+        - createTable:
+            tableName: pipelines
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: name
+                  type: VARCHAR(250)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: airflow_dag_id
+                  type: VARCHAR(250)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+              - column:
+                  name: database_name
+                  type: VARCHAR(200)
+
+              - column:
+                  name: schema_name
+                  type: VARCHAR(200)
+
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  defaultValue: CREATED
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: pipelines
+            baseColumnNames: service_id
+            referencedTableName: services
+            referencedColumnNames: id
+            constraintName: fk_pipelines_service
+
+        - createIndex:
+            indexName: idx_pipelines_service_id
+            tableName: pipelines
+            columns:
+              - column:
+                  name: service_id

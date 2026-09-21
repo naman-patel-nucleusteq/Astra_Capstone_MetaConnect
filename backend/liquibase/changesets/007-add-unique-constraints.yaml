@@ -1,0 +1,25 @@
+databaseChangeLog:
+   - changeSet:
+      id: 007-add-unique-constraints
+      author: metaconnect
+      changes:
+
+        - addUniqueConstraint:
+            tableName: databases
+            columnNames: service_id, name
+            constraintName: unique_database_service
+     
+        - addUniqueConstraint:
+            tableName: schemas
+            columnNames: database_id, name
+            constraintName: unique_schema_database
+     
+        - addUniqueConstraint:
+            tableName: tables
+            columnNames: schema_id, name
+            constraintName: unique_table_schema
+     
+        - addUniqueConstraint:
+            tableName: columns
+            columnNames: table_id, name
+            constraintName: unique_column_table

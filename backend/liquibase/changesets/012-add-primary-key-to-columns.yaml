@@ -1,0 +1,15 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 012-add-primary-key-to-columns
+      author: metaconnect
+      changes:
+        - addColumn:
+            tableName: columns
+            columns:
+                - column:
+                    name: is_primary_key
+                    type: BOOLEAN
+                    defaultValueBoolean: false
+                    constraints:
+                      nullable: false

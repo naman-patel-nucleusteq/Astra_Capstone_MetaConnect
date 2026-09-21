@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-add-created-by
+      author: metaconnect
+      changes:
+        - addColumn:
+            tableName: services
+            columns:     
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+      
+      
+        - addColumn:
+            tableName: databases
+            columns:
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+      
+      
+        - addColumn:
+            tableName: schemas
+            columns:     
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+      
+      
+        - addColumn:
+            tableName: tables
+            columns:     
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+      
+      
+        - addColumn:
+            tableName: columns
+            columns:   
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+      
+      
+        - addColumn:
+            tableName: ingestion_runs
+            columns:      
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)

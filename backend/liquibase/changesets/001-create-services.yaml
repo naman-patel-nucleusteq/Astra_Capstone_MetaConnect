@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-services
+      author: metaconnect
+      changes:
+        - createTable:
+            tableName: services
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+          
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+           
+              - column:
+                  name: service_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+           
+              - column:
+                  name: airflow_connection_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+      
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false

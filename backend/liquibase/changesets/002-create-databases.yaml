@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-databases
+      author: metaconnect
+      changes:
+        - createTable:
+            tableName: databases
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+            
+              - column:
+                  name: service_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false           
+            
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                      
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false        
+            
+              - addForeignKeyConstraint:
+                  baseTableName: databases
+                  baseColumnNames: service_id
+                  referencedTableName: services
+                  referencedColumnNames: id
+                  constraintName: fk_databases_service

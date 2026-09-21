@@ -1,0 +1,85 @@
+{
+  "realm": "metaconnect",
+  "enabled": true,
+  "displayName": "MetaConnect",
+  "displayNameHtml": "<b>MetaConnect</b>",
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "accessTokenLifespan": 300,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "clients": [
+    {
+      "clientId": "metaconnect-app",
+      "name": "MetaConnect APP",
+      "description": "MetaConnect FastAPI backend client",
+      "enabled": true,
+      "publicClient": true,
+      "bearerOnly": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:8000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:8000"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.lifespan": "300"
+      }
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "MetaConnect administrator - full access"
+      },
+      {
+        "name": "viewer",
+        "description": "MetaConnect viewer - read-only access"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "",
+      "email": "",
+      "firstName": "MetaConnect",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "",
+      "email": "",
+      "firstName": "MetaConnect",
+      "lastName": "Viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["viewer"]
+    }
+  ]
+}

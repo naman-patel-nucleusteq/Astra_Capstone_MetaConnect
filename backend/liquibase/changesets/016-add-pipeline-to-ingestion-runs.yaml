@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-add-pipeline-to-ingestion-runs
+      author: metaconnect
+      changes:
+        - addColumn:
+            tableName: ingestion_runs
+            columns:
+              - column:
+                  name: pipeline_id
+                  type: UUID
+
+              - column:
+                  name: summary
+                  type: JSONB
+
+        - addForeignKeyConstraint:
+            baseTableName: ingestion_runs
+            baseColumnNames: pipeline_id
+            referencedTableName: pipelines
+            referencedColumnNames: id
+            constraintName: fk_ingestion_runs_pipeline
+
+        - createIndex:
+            indexName: idx_ingestion_runs_pipeline_id
+            tableName: ingestion_runs
+            columns:
+              - column:
+                  name: pipeline_id

@@ -1,0 +1,211 @@
+x-airflow-common: &airflow-common
+  build:
+    context: ./airflow
+    dockerfile: Dockerfile
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${METACONNECT_USER}:${METACONNECT_PASSWORD}@postgres:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    PYTHONPATH: /opt/airflow/backend
+    DATABASE_URL: postgresql+psycopg2://${METACONNECT_USER}:${METACONNECT_PASSWORD}@postgres:5432/metaconnect
+    ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/services:/opt/airflow/services
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./backend:/opt/airflow/backend
+    - airflow_logs:/opt/airflow/logs
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    - metaconnect-net
+
+
+services:
+
+  # FastAPI backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: metaconnect-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://${METACONNECT_USER}:${METACONNECT_PASSWORD}@postgres:5432/${METACONNECT_DB}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      KEYCLOAK_URL: ${KEYCLOAK_URL}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      AIRFLOW_API_URL: ${AIRFLOW_API_URL}
+      AIRFLOW_USERNAME: ${AIRFLOW_USERNAME}
+      AIRFLOW_PASSWORD: ${AIRFLOW_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - metaconnect-net
+ 
+ 
+  # React frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: metaconnect-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      -  backend
+    networks:
+      - metaconnect-net
+
+
+  # PostgreSQL :- catalog DB and Airflow metadata DB
+  postgres:
+    image: postgres:16
+    container_name: metaconnect-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: metaconnect
+      POSTGRES_USER: ${METACONNECT_USER}
+      POSTGRES_PASSWORD: ${METACONNECT_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${METACONNECT_USER} -d ${METACONNECT_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - metaconnect-net
+
+  postgres-init:
+    image: postgres:16
+    container_name: metaconnect-postgres-init
+    depends_on:
+      - postgres
+    environment:
+      PGPASSWORD: ${METACONNECT_PASSWORD}
+    command:
+      - sh
+      - -c
+      - |
+        until pg_isready -h postgres -U ${METACONNECT_USER}; do
+          sleep 2
+        done
+        psql -h postgres -U ${METACONNECT_USER} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${AIRFLOW_DB}'" | grep -q 1 || \
+        psql -h postgres -U ${METACONNECT_USER} -d postgres -c "CREATE DATABASE ${AIRFLOW_DB} OWNER metaconnect"
+    networks:
+      - metaconnect-net
+
+
+  # Liquibase – schema migrations for catalog DB
+  liquibase:
+    build:
+      context: ./backend/liquibase
+      dockerfile: Dockerfile
+    container_name: metaconnect-liquibase
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/liquibase:/liquibase/changelog
+    command:
+      - --url=jdbc:postgresql://postgres:5432/metaconnect
+      - --username=${METACONNECT_USER}
+      - --password=${METACONNECT_PASSWORD}
+      - --changelog-file=db.changelog-master.yaml
+      - --search-path=/liquibase/changelog
+      - update
+    networks:
+      - metaconnect-net
+
+
+  # Airflow init
+  airflow-init:
+    <<: *airflow-common
+    container_name: metaconnect-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username ${AIRFLOW_USERNAME} \
+          --password ${AIRFLOW_PASSWORD} \
+          --firstname MetaConnect \
+          --lastname Admin \
+          --role Admin \
+          --email ${AIRFLOW_ADMIN_EMAIL} || true
+    restart: on-failure
+
+
+  # Airflow Webserver
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: metaconnect-airflow-webserver
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+
+  # Airflow Scheduler
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: metaconnect-airflow-scheduler
+    restart: unless-stopped
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+
+  # Keycloak 
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: metaconnect-keycloak
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    ports:
+      - "8180:8080"
+    command:
+      - start-dev
+      - --import-realm
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    networks:
+      - metaconnect-net
+
+
+networks:
+  metaconnect-net:
+    driver: bridge
+
+
+volumes:
+  postgres_data:
+  airflow_logs:

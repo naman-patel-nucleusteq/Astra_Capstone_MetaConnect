@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg[binary]
+snowflake-connector-python
+pymongo
+cryptography
+python-dotenv
+requests
+python-jose[cryptography]
+httpx

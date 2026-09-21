@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-add-pipeline-schedule
+      author: metaconnect
+      changes:
+        - addColumn:
+            tableName: pipelines
+            columns:
+              - column:
+                  name: schedule_type
+                  type: VARCHAR(20)
+                  defaultValue: MANUAL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: schedule
+                  type: VARCHAR(120)

@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - include:
+      file: changesets/001-create-services.yaml
+
+  - include:
+      file: changesets/002-create-databases.yaml
+
+  - include:
+      file: changesets/003-create-schemas.yaml
+
+  - include:
+      file: changesets/004-create-tables.yaml
+
+  - include:
+      file: changesets/005-create-columns.yaml
+
+  - include:
+      file: changesets/006-add-updated-at.yaml
+
+  - include:
+      file: changesets/007-add-unique-constraints.yaml
+
+  - include:
+      file: changesets/008-create-ingestion-runs.yaml
+
+  - include:
+      file: changesets/009-add-metadata-description-tags.yaml
+
+  - include:
+      file: changesets/010-add-service-connection-details.yaml
+
+  - include:
+      file: changesets/011-add-created-by.yaml
+
+  - include:
+      file: changesets/012-add-primary-key-to-columns.yaml
+
+  - include:
+      file: changesets/013-add-error-message-to-ingestion-runs.yaml
+
+  - include:
+      file: changesets/014-add-service-uuid.yaml
+
+  - include:
+      file: changesets/015-create-pipelines.yaml
+
+  - include:
+      file: changesets/016-add-pipeline-to-ingestion-runs.yaml
+
+  - include:
+      file: changesets/017-create-metadata-staging.yaml
+
+  - include:
+      file: changesets/018-add-pipeline-schedule.yaml

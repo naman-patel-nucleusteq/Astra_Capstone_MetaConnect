@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-add-error-message-to-ingestion-runs
+      author: metaconnect
+      changes:
+          - addColumn:
+              tableName: ingestion_runs
+              columns:
+                - column:
+                    name: error_message
+                    type: TEXT

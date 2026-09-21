@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-add-service-connection-details
+      author: metaconnect
+      changes:
+        - addColumn:
+            tableName: services
+            columns:
+              - column:
+                  name: username
+                  type: VARCHAR(100)
+            
+              - column:
+                  name: encrypted_password
+                  type: TEXT            
+            
+              - column:
+                  name: connection_details
+                  type: JSONB

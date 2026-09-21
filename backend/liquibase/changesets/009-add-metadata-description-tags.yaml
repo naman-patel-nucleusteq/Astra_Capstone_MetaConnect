@@ -1,0 +1,63 @@
+databaseChangeLog:
+   - changeSet:
+       id: 009-add-metadata-description-tags
+       author: metaconnect
+       changes:
+
+          - addColumn:
+              tableName: services
+              columns:
+                  - column:
+                      name: description
+                      type: TEXT
+               
+                  - column:
+                      name: tags
+                      type: JSONB
+
+          - addColumn:
+              tableName: databases
+              columns:
+                  - column:
+                      name: description
+                      type: TEXT
+               
+                  - column:
+                      name: tags
+                      type: JSONB
+              
+              
+          - addColumn:
+              tableName: schemas
+              columns:
+                - column:
+                    name: description
+                    type: TEXT
+              
+                - column:
+                    name: tags
+                    type: JSONB
+              
+              
+          - addColumn:
+              tableName: tables
+              columns:
+                - column:
+                    name: description
+                    type: TEXT
+              
+                - column:
+                    name: tags
+                    type: JSONB
+        
+        
+          - addColumn:
+              tableName: columns
+              columns:
+                - column:
+                    name: description
+                    type: TEXT
+              
+                - column:
+                    name: tags
+                    type: JSONB
