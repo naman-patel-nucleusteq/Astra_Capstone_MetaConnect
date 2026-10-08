@@ -1,16 +1,9 @@
-import { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import LoadingScreen from '../components/LoadingScreen.jsx'
 import { useAuth } from '../services/auth.js'
 
 function Login() {
-  const { isLoading, isAuthenticated, error: authError, login } = useAuth()
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated && !authError) {
-      login()
-    }
-  }, [isLoading, isAuthenticated, authError, login])
+  const { isLoading, isAuthenticated, error: authError} = useAuth()
 
   if (isLoading || isAuthenticated) {
     return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoadingScreen />

@@ -1,16 +1,14 @@
 x-airflow-common: &airflow-common
-  build:
-    context: .
-    dockerfile: airflow/Dockerfile
+  image: namanpatelnucleusteq/metaconnect-airflow:latest
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${METACONNECT_USER}:${METACONNECT_PASSWORD}@postgres:5432/airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${METACONNECT_USER}:${METACONNECT_PASSWORD}@postgres:5432/${AIRFLOW_DB}
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
     PYTHONPATH: /opt/airflow/backend
-    DATABASE_URL: postgresql+psycopg2://${METACONNECT_USER}:${METACONNECT_PASSWORD}@postgres:5432/metaconnect
+    DATABASE_URL: postgresql+psycopg2://${METACONNECT_USER}:${METACONNECT_PASSWORD}@postgres:5432/${METACONNECT_DB}
     ENCRYPTION_KEY: ${ENCRYPTION_KEY}
   volumes:
     - airflow_logs:/opt/airflow/logs
@@ -25,9 +23,7 @@ services:
 
   # FastAPI backend
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: namanpatelnucleusteq/metaconnect-backend:latest
     container_name: metaconnect-backend
     restart: unless-stopped
     ports:
@@ -46,19 +42,17 @@ services:
         condition: service_healthy
     networks:
       - metaconnect-net
- 
- 
+
+
   # React frontend
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: namanpatelnucleusteq/metaconnect-frontend:latest
     container_name: metaconnect-frontend
     restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
-      -  backend
+      - backend
     networks:
       - metaconnect-net
 
@@ -69,7 +63,7 @@ services:
     container_name: metaconnect-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: metaconnect
+      POSTGRES_DB: ${METACONNECT_DB}
       POSTGRES_USER: ${METACONNECT_USER}
       POSTGRES_PASSWORD: ${METACONNECT_PASSWORD}
     ports:
@@ -84,11 +78,14 @@ services:
     networks:
       - metaconnect-net
 
+
+  # Create Airflow database
   postgres-init:
     image: postgres:16
     container_name: metaconnect-postgres-init
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       PGPASSWORD: ${METACONNECT_PASSWORD}
     command:
@@ -98,25 +95,22 @@ services:
         until pg_isready -h postgres -U ${METACONNECT_USER}; do
           sleep 2
         done
-        psql -h postgres -U ${METACONNECT_USER} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${AIRFLOW_DB}'" | grep -q 1 || \
-        psql -h postgres -U ${METACONNECT_USER} -d postgres -c "CREATE DATABASE ${AIRFLOW_DB} OWNER metaconnect"
+        if ! psql -h postgres -U ${METACONNECT_USER} -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '${AIRFLOW_DB}'" | grep -q 1; then
+          psql -h postgres -U ${METACONNECT_USER} -d postgres -c "CREATE DATABASE ${AIRFLOW_DB} OWNER ${METACONNECT_USER}"
+        fi
     networks:
       - metaconnect-net
 
 
-  # Liquibase – schema migrations for catalog DB
+  # Liquibase 
   liquibase:
-    build:
-      context: ./backend/liquibase
-      dockerfile: Dockerfile
+    image: namanpatelnucleusteq/metaconnect-liquibase:latest
     container_name: metaconnect-liquibase
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend/liquibase:/liquibase/changelog
     command:
-      - --url=jdbc:postgresql://postgres:5432/metaconnect
+      - --url=jdbc:postgresql://postgres:5432/${METACONNECT_DB}
       - --username=${METACONNECT_USER}
       - --password=${METACONNECT_PASSWORD}
       - --changelog-file=db.changelog-master.yaml
@@ -178,11 +172,9 @@ services:
         condition: service_healthy
 
 
-  # Keycloak 
+  # Keycloak
   keycloak:
-    build:
-      context: ./keycloak
-      dockerfile: Dockerfile
+    image: namanpatelnucleusteq/metaconnect-keycloak:latest
     container_name: metaconnect-keycloak
     restart: unless-stopped
     environment:

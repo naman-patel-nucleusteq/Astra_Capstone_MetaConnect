@@ -36,7 +36,7 @@ export function login() {
 }
 
 export function logout() {
-  const redirectUri = applicationUrl + '/'
+  const redirectUri = applicationUrl + '/login'
   return keycloak.logout({ redirectUri })
 }
 
