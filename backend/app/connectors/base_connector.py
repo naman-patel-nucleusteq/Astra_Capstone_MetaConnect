@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 
 class BaseConnector(ABC):
@@ -11,7 +12,14 @@ class BaseConnector(ABC):
     supports_columns = True
 
     @classmethod
-    def from_connection(cls, username, password, connection_details, database=None, schema=None):
+    def from_connection(
+        cls,
+        username: str | None,
+        password: str | None,
+        connection_details: dict[str, Any],
+        database: str | None = None,
+        schema: str | None = None,
+    ):
         raise NotImplementedError
 
     @abstractmethod

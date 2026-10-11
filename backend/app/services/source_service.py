@@ -3,8 +3,7 @@
 from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from app.connectors.factory import get_connector_capabilities
-from app.connectors.factory import get_connector
+from app.connectors.factory import connector_class, get_connector_capabilities, get_connector
 from app.core.encryption import decrypt_password, encrypt_password
 from app.database.models import Database, IngestionRun, MetadataColumn, MetadataStaging, Pipeline, Schema, Service, Table
 from app.integrations.airflow_client import delete_dag, trigger_dag
@@ -20,13 +19,19 @@ def get_service(service_uuid: UUID, db: Session):
 
 
 def create_service(service: ServiceCreate, db: Session, current_user: str):
-    airflow_connection_id = f"metaconnect_{service.service_type.lower()}_{service.name.lower().replace(' ', '_')}"
+    service_type = service.service_type.strip().upper()
+    try:
+        connector_class(service_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    airflow_connection_id = f"metaconnect_{service_type.lower()}_{service.name.lower().replace(' ', '_')}"
     new_service = Service(
         name=service.name,
         description=service.description,
-        service_type=service.service_type,
-        username=service.username,
-        encrypted_password=encrypt_password(service.password),
+        service_type=service_type,
+        username=service.username.strip() if service.username else None,
+        encrypted_password=encrypt_password(service.password) if service.password else None,
         connection_details=service.connection_details,
         airflow_connection_id=airflow_connection_id,
         created_by=current_user,
@@ -59,9 +64,9 @@ def test_updated_service_connection(service_uuid: UUID, payload: ServiceConnecti
     service = get_service(service_uuid, db)
     details = {**(service.connection_details or {}), **(payload.connection_details or {})}
     username = payload.username.strip() if payload.username else service.username
-    password = payload.password or decrypt_password(service.encrypted_password)
-    if not username or not password:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username and password are required to test this connection")
+    password = payload.password or (
+        decrypt_password(service.encrypted_password) if service.encrypted_password else None
+    )
     try:
         connector = get_connector(
             service_type=service.service_type,
@@ -73,6 +78,24 @@ def test_updated_service_connection(service_uuid: UUID, payload: ServiceConnecti
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Connection test failed: {exc}") from exc
     return {"success": True, "message": f"{service.service_type} connection successful"}
+
+
+def test_new_service_connection(payload: ServiceConnectionTest):
+    try:
+        connector_class(payload.service_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    try:
+        connector = get_connector(
+            service_type=payload.service_type,
+            username=payload.username.strip() if payload.username else None,
+            password=payload.password,
+            connection_details=payload.connection_details,
+        )
+        connector.test_connection()
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Connection test failed: {exc}") from exc
+    return {"success": True, "message": f"{payload.service_type.upper()} connection successful"}
 
 
 def list_services(db: Session):
@@ -158,8 +181,8 @@ def service_capabilities(service: Service) -> dict[str, bool]:
         return get_connector_capabilities(service.service_type)
     except ValueError:
         return {
-            "supports_databases": True,
-            "supports_schemas": True,
-            "supports_tables": True,
-            "supports_columns": True,
+            "supports_databases": False,
+            "supports_schemas": False,
+            "supports_tables": False,
+            "supports_columns": False,
         }

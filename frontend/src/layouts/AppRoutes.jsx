@@ -5,7 +5,7 @@ import Login from '../pages/Login.jsx'
 import Dashboard from '../pages/Dashboard.jsx'
 import Connections from '../pages/Connections.jsx'
 import AvailableConnections from '../pages/AvailableConnections.jsx'
-import SnowflakeConnection from '../pages/SnowflakeConnection.jsx'
+import ConnectorConnection from '../pages/ConnectorConnection.jsx'
 import MetadataExplorer from '../pages/MetadataExplorer.jsx'
 import PipelineRuns from '../pages/PipelineRuns.jsx'
 import ConnectionDetails from '../pages/ConnectionDetails.jsx'
@@ -35,7 +35,8 @@ function AppRoutes({ layout: Layout }) {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="connections" element={<Connections />} />
           <Route path="connections/available" element={<AvailableConnections />} />
-          <Route path="connections/snowflake" element={<SnowflakeConnection />} />
+          <Route path="connections/new/:connectorType" element={<ConnectorConnection />} />
+          <Route path="connections/snowflake" element={<ConnectorConnection connectorType="snowflake" />} />
           <Route path="connections/:connectionId" element={<ConnectionDetails />} />
           <Route path="connections/:connectionId/pipelines/new" element={<CreatePipeline />} />
           <Route path="metadata" element={<MetadataExplorer />} />

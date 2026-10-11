@@ -1,8 +1,10 @@
 from app.connectors.snowflake_connector import SnowflakeConnector
+from app.connectors.pinot_connector import PinotConnector
 
 
 CONNECTOR_REGISTRY = {
     "SNOWFLAKE": SnowflakeConnector,
+    "PINOT": PinotConnector,
 }
 
 

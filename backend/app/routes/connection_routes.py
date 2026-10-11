@@ -4,24 +4,24 @@ Snowflake connection testing and metadata endpoints.
 
 from fastapi import APIRouter, Depends
 from app.core.auth import get_current_user
-from app.services import connection_service
+from app.services import connection_service, source_service
 from app.schemas.connection_schemas import (
-    SnowflakeConnection,
     SnowflakeDatabaseRequest,
     SnowflakeSchemaRequest,
     SnowflakeTableRequest,
     SnowflakeColumnRequest,
 )
+from app.schemas.service_schemas import ServiceConnectionTest
 
 
 router = APIRouter()
 
 
 @router.post("/test")
-def test_connection(connection: SnowflakeConnection, current_user: str = Depends(get_current_user),):
-    """Test a Snowflake connection without saving any credentials."""
+def test_connection(connection: ServiceConnectionTest, current_user: str = Depends(get_current_user),):
+    """Test a connector without saving its credentials."""
 
-    return connection_service.test_connection(connection)
+    return source_service.test_new_service_connection(connection)
 
 
 

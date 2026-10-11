@@ -1,23 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom'
-import snowflakeLogo from '../assets/snowflake.svg'
-import mongodbLogo from '../assets/mongodb.svg'
 import PagePlaceholder from '../components/PagePlaceholder.jsx'
-import ToastNotification from '../components/ToastNotification.jsx'
-import { useEffect, useState } from 'react'
+import { CONNECTORS } from '../config/connectors.js'
 
 function AvailableConnections() {
-
   const navigate = useNavigate()
-  const [notice, setNotice] = useState(null)
-
-  useEffect(() => {
-    if (!notice) 
-      return undefined
-    const timer = window.setTimeout(() => setNotice(null), 5000)
-    return () => window.clearTimeout(timer)
-  }, [notice])
-
-  
   return (
     <>
       <PagePlaceholder
@@ -29,22 +15,20 @@ function AvailableConnections() {
 
       <section className="content-section">
         <div className="connection-type-grid">
-          <button className="connection-type-card" type="button" onClick={() => navigate('/connections/snowflake')}>
-            <img src={snowflakeLogo} alt="" />
-            <span className="connection-type-name">Snowflake</span>
-            <span className="connection-type-description">Connect to Snowflake and ingest database metadata.</span>
-          </button>
-
-          {/* <button className="connection-type-card" type="button" onClick={() => setNotice({ tone: 'error', message: 'MongoDB is not available right now.' })}>
-            <img src={mongodbLogo} alt="" />
-            <span className="connection-type-name">Mongo DB</span>
-            <span className="connection-type-description">Connect to Mongo DB and ingest database metadata.</span>
-          </button> */}
+          {Object.entries(CONNECTORS).map(([key, connector]) => (
+            <button
+              className="connection-type-card"
+              key={connector.type}
+              type="button"
+              onClick={() => navigate(`/connections/new/${key}`)}
+            >
+              {connector.logo && <img className={`connection-type-logo connection-type-logo-${key}`} src={connector.logo} alt="" />}
+              <span className="connection-type-name">{connector.label}</span>
+              <span className="connection-type-description">{connector.description}</span>
+            </button>
+          ))}
         </div>
       </section>
-
-      {notice && <ToastNotification {...notice} onDismiss={() => setNotice(null)} />}
-
     </>
   )
 }

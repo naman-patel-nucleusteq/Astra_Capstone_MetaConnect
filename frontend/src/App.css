@@ -714,6 +714,12 @@
   height: 40px;
   margin-bottom: 20px;
 }
+.connection-type-card img.connection-type-logo-pinot {
+  width: 120px;
+  height: 64px;
+  object-fit: contain;
+  object-position: left center;
+}
 .connection-type-name {
   color: #2b4438;
   font-family: "Space Grotesk", sans-serif;

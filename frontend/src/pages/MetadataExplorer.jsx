@@ -110,7 +110,7 @@ function MetadataExplorer() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Load the catalog tree and by deafult snoflake page opens
+  // Load the catalog tree and select a connected service by default.
   useEffect(() => {
     let active = true
     async function loadConnections() {
@@ -120,10 +120,10 @@ function MetadataExplorer() {
           const nextTree = response.data.services
           setTree(nextTree)
           if (!searchParams.get('q')) {
-            const snowflake = nextTree.find((node) => node.name.toUpperCase() === 'SNOWFLAKE')
-            if (snowflake) {
-              setSelected(snowflake)
-              setExpanded(new Set([`${snowflake.type}-${snowflake.id}`]))
+            const defaultService = nextTree.find((node) => node.name.toUpperCase() === 'SNOWFLAKE') || nextTree[0]
+            if (defaultService) {
+              setSelected(defaultService)
+              setExpanded(new Set([`${defaultService.type}-${defaultService.id}`]))
             }
           }
         }

@@ -93,12 +93,10 @@ def get_service(db, service_id):
 
 
 def connector_for(service, pipeline):
-    if not service.username or not service.encrypted_password:
-        raise ValueError("Service must contain a username and encrypted password")
     return get_connector(
         service_type=service.service_type,
         username=service.username,
-        password=decrypt_password(service.encrypted_password),
+        password=decrypt_password(service.encrypted_password) if service.encrypted_password else None,
         connection_details=service.connection_details or {},
         database=pipeline.database_name,
         schema=pipeline.schema_name,

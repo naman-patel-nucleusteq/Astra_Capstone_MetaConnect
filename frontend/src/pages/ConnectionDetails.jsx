@@ -4,6 +4,7 @@ import api from '../services/api.js'
 import StatePanel from '../components/StatePanel.jsx'
 import ToastNotification from '../components/ToastNotification.jsx'
 import { getApiErrorMessage } from '../services/apiErrors.js'
+import { getConnectorConfig } from '../config/connectors.js'
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleString() : '--'
@@ -79,14 +80,18 @@ function ConnectionDetails() {
           : { data: [] }
         if (active) {
           setConnection(connectionResponse.data)
+          const connectorConfig = getConnectorConfig(connectionResponse.data.service_type)
           setConnectionForm({
             name: connectionResponse.data.name,
             description: connectionResponse.data.description || '',
             username: connectionResponse.data.username || '',
             password: '',
-            account: connectionResponse.data.connection_details?.account || '',
-            warehouse: connectionResponse.data.connection_details?.warehouse || '',
-            role: connectionResponse.data.connection_details?.role || '',
+            settings: Object.fromEntries(
+              (connectorConfig?.fields || []).map((field) => [
+                field.name,
+                connectionResponse.data.connection_details?.[field.name] ?? '',
+              ]),
+            ),
             details: JSON.stringify(connectionResponse.data.connection_details || {}, null, 2),
           })
           setPipelines(pipelinesResponse.data)
@@ -204,14 +209,22 @@ function ConnectionDetails() {
     setConnectionFormError(null)
   }
 
-  // returning connector specific connection information
+  function updateConnectionSetting(event) {
+    setConnectionForm((current) => ({
+      ...current,
+      settings: { ...current.settings, [event.target.name]: event.target.value },
+    }))
+    setConnectionTest(null)
+    setConnectionFormError(null)
+  }
+
   function connectionDetailsPayload() {
-    if (connection.service_type.toUpperCase() === 'SNOWFLAKE') {
-      return {
-        account: connectionForm.account.trim(),
-        warehouse: connectionForm.warehouse.trim(),
-        role: connectionForm.role.trim() || null,
-      }
+    const connectorConfig = getConnectorConfig(connection.service_type)
+    if (connectorConfig) {
+      return Object.fromEntries(connectorConfig.fields.map((field) => {
+        const value = String(connectionForm.settings[field.name] ?? '').trim()
+        return [field.name, field.type === 'number' && value ? Number(value) : value || null]
+      }))
     }
     try {
       return JSON.parse(connectionForm.details || '{}')
@@ -295,21 +308,22 @@ function ConnectionDetails() {
   }
 
   // connection details array
+  const connectorConfig = getConnectorConfig(connection.service_type)
   const connectionDetailRows = [
     ['Connection name', connection.name],
     ['Description', connection.description || '--'],
     ['Connection UUID', connection.uuid],
     ['Connection type', connection.service_type],
     ['Username', connection.username || '--'],
-    ['Account', connection.connection_details?.account || '--'],
-    ['Warehouse', connection.connection_details?.warehouse || '--'],
-    ['Role', connection.connection_details?.role || '--'],
     ['Owner', connection.created_by || 'Unknown'],
     ['Created at', formatDate(connection.created_at)],
     ['Airflow connection', connection.airflow_connection_id],
     ...Object.entries(connection.connection_details || {})
-      .filter(([key]) => !['account', 'warehouse', 'role', 'password'].includes(key.toLowerCase()))
-      .map(([key, value]) => [key, typeof value === 'object' ? JSON.stringify(value) : value || '--']),
+      .filter(([key]) => !['password', 'token', 'access_token', 'secret'].includes(key.toLowerCase()))
+      .map(([key, value]) => [
+        key.replaceAll('_', ' ').replace(/\b\w/g, (character) => character.toUpperCase()),
+        typeof value === 'object' && value !== null ? JSON.stringify(value) : value || '--',
+      ]),
   ]
 
   return (
@@ -358,18 +372,28 @@ function ConnectionDetails() {
             <div className="form-grid">
               <label>Connection name<input required name="name" value={connectionForm.name} onChange={updateConnectionField} /></label>
               <label className="form-field-wide">Description<textarea rows="3" name="description" value={connectionForm.description} onChange={updateConnectionField} /></label>
-              <label>Username<input required name="username" value={connectionForm.username} onChange={updateConnectionField} autoComplete="username" /></label>
-              <label>Password<input type="password" name="password" value={connectionForm.password} onChange={updateConnectionField} placeholder="Leave blank to keep current password" autoComplete="new-password" /></label>
-              {connection.service_type.toUpperCase() === 'SNOWFLAKE' ? 
-              <>
-                <label>Account<input required name="account" value={connectionForm.account} onChange={updateConnectionField} /></label>
-                <label>Warehouse<input required name="warehouse" value={connectionForm.warehouse} onChange={updateConnectionField} /></label>
-                <label>
-                  <div>Role <span className="optional">(Optional)</span></div>
-                  <input name="role" value={connectionForm.role} onChange={updateConnectionField} />
-                </label>
-              </> 
-              : 
+              <label>
+                Username {connectorConfig?.usernameRequired === false && <span className="optional">(Optional)</span>}
+                <input required={connectorConfig?.usernameRequired !== false} name="username" value={connectionForm.username} onChange={updateConnectionField} autoComplete="username" />
+              </label>
+              <label>
+                Password {connectorConfig?.passwordRequired === false && <span className="optional">(Optional)</span>}
+                <input type="password" name="password" value={connectionForm.password} onChange={updateConnectionField} placeholder="Leave blank to keep current password" autoComplete="new-password" />
+              </label>
+              {connectorConfig ?
+                connectorConfig.fields.map((field) => (
+                  <label key={field.name}>
+                    {field.label} {!field.required && <span className="optional">(Optional)</span>}
+                    <input
+                      required={field.required}
+                      type={field.type || 'text'}
+                      name={field.name}
+                      value={connectionForm.settings[field.name] ?? ''}
+                      onChange={updateConnectionSetting}
+                    />
+                  </label>
+                ))
+              :
               <label className="form-field-wide">
                 Connection details (JSON)<textarea rows="6" name="details" value={connectionForm.details} onChange={updateConnectionField} />
               </label>}
